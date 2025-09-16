@@ -19,7 +19,7 @@ interface RemesasViewProps {
     categories: Category[];
     onAssignToVehicle: (invoiceIds: string[], vehicleId: string) => void;
     onUnassignInvoice: (invoiceId: string) => void;
-    onDispatchVehicle: (vehicleId: string) => void;
+    onDispatchVehicle: (vehicleId: string) => Promise<Remesa | null>;
     onDeleteRemesa: (remesaId: string) => void;
     permissions: Permissions;
     companyInfo: CompanyInfo;
@@ -73,6 +73,15 @@ const RemesasView: React.FC<RemesasViewProps> = (props) => {
         }
         setIsAssignModalOpen(false);
     };
+    
+    const handleDispatchAndShowManifest = async (vehicleId: string) => {
+        const newRemesa = await onDispatchVehicle(vehicleId);
+        if (newRemesa) {
+            setRemesaForManifest(newRemesa);
+            setIsManifestModalOpen(true);
+        }
+    };
+
 
     const handleOpenManifestModal = (remesa: Remesa) => {
         setRemesaForManifest(remesa);
@@ -136,7 +145,7 @@ const RemesasView: React.FC<RemesasViewProps> = (props) => {
                                             <PlusIcon className="w-4 h-4 mr-2" /> Asignar Facturas
                                         </Button>
                                          <Button 
-                                            onClick={() => onDispatchVehicle(vehicle.id)} 
+                                            onClick={() => handleDispatchAndShowManifest(vehicle.id)} 
                                             variant="primary" 
                                             className="w-full"
                                             disabled={assignedInvoices.length === 0}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Remesa, Invoice, Vehicle, Office, Client, CompanyInfo, Asociado, Category } from '../../types';
@@ -25,6 +25,49 @@ const formatCurrency = (amount: number) => amount.toLocaleString('es-VE', { mini
 const RemesaDocumentModal: React.FC<RemesaDocumentModalProps> = ({
     isOpen, onClose, remesa, invoices, asociados, vehicles, clients, companyInfo, offices, categories
 }) => {
+    
+    const handleDownloadPdf = () => {
+        const input = document.getElementById('remesa-to-print');
+        if (!input) return;
+
+        html2canvas(input, { scale: 2.5, useCORS: true, windowWidth: input.scrollWidth, windowHeight: input.scrollHeight }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            
+            const ratio = canvasWidth / canvasHeight;
+            const imgHeight = pdfWidth / ratio;
+
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+            heightLeft -= pdfHeight;
+
+            while (heightLeft > 0) {
+                position -= pdfHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+                heightLeft -= pdfHeight;
+            }
+            
+            pdf.save(`remesa_${remesa.remesaNumber}.pdf`);
+        });
+    };
+
+    useEffect(() => {
+        if (isOpen) {
+            const timer = setTimeout(() => {
+                handleDownloadPdf();
+            }, 500); // Short delay to ensure modal is fully rendered
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     const asociado = asociados.find(a => a.id === remesa.asociadoId);
@@ -84,52 +127,32 @@ const RemesaDocumentModal: React.FC<RemesaDocumentModalProps> = ({
     const cuentaPorCobrar = subTotalNeto; // Assuming regalias, prestamos are 0 for now
     const referenciaDolares = companyInfo.bcvRate ? cuentaPorCobrar / companyInfo.bcvRate : 0;
 
-
-    const handleDownloadPdf = () => {
-        const input = document.getElementById('remesa-to-print');
-        if (!input) return;
-
-        html2canvas(input, { scale: 2.5, useCORS: true }).then(canvas => {
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const canvasWidth = canvas.width;
-            const canvasHeight = canvas.height;
-            const ratio = pdfWidth / canvasWidth;
-            const finalImgHeight = canvasHeight * ratio;
-            
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalImgHeight);
-            pdf.save(`remesa_${remesa.remesaNumber}.pdf`);
-        });
-    };
-
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={`Remesa de Carga - ${remesa.remesaNumber}`} size="4xl">
-            <div id="remesa-to-print" className="bg-white text-black p-4 text-[9px] font-sans">
+            <div id="remesa-to-print" className="bg-white text-black p-4 text-xs font-sans">
                 {/* Header */}
                 <div className="grid grid-cols-2">
                     <div>
-                        <p className="font-bold text-[10px]">Asociación Cooperativa Mixta</p>
-                        <p className="font-bold text-[10px]">FRATERNIDAD DEL TRANSPORTE, R.L.</p>
+                        <p className="font-bold text-sm">Asociación Cooperativa Mixta</p>
+                        <p className="font-bold text-sm">FRATERNIDAD DEL TRANSPORTE, R.L.</p>
                         <p>RIF: {companyInfo.rif}</p>
                     </div>
                     <div className="text-right">
-                        <p className="font-bold text-[12px]">REMESA DE ASOCIADO</p>
+                        <p className="font-bold text-lg">REMESA DE ASOCIADO</p>
                         <p><strong>LIQUIDACION #:</strong> {remesa.remesaNumber}</p>
                         <p><strong>Emision:</strong> {remesa.date}</p>
                         <p><strong>Hora:</strong> {new Date().toLocaleTimeString('es-VE')}</p>
                         <p><strong>Página:</strong> 1</p>
                     </div>
                 </div>
-                <div className="mt-2 text-[10px]">
+                <div className="mt-4 text-sm">
                     <p><strong>SUCURSAL:</strong> 0001-CARACAS</p>
                     <p><strong>CONTROL:</strong> {`0029-GOMEZMOTAEUCLIDESRAFAEL`}</p>
                     <p><strong>CHOFER:</strong> {asociado?.nombre}, Vehiculo: {vehicle?.modelo}, Color: {vehicle?.color}, Placa: {vehicle?.placa}</p>
                 </div>
                 
                 {/* Invoices Table */}
-                <div className="mt-2">
+                <div className="mt-4">
                     <table className="w-full border-collapse">
                         <thead>
                             <tr className="border-y border-black font-bold text-black">
@@ -201,7 +224,7 @@ const RemesaDocumentModal: React.FC<RemesaDocumentModalProps> = ({
                 </div>
 
                 {/* Financial Summary */}
-                <div className="mt-2 space-y-2">
+                <div className="mt-4 space-y-2">
                     <table className="w-full">
                         <thead className="border-y border-black">
                             <tr className="text-black">
@@ -257,7 +280,7 @@ const RemesaDocumentModal: React.FC<RemesaDocumentModalProps> = ({
                         </tbody>
                     </table>
 
-                    <div className="grid grid-cols-2 gap-4 mt-2">
+                    <div className="grid grid-cols-2 gap-4 mt-4">
                         {/* Left Side */}
                         <div className="grid grid-cols-2 gap-x-2">
                             <div>
@@ -292,7 +315,7 @@ const RemesaDocumentModal: React.FC<RemesaDocumentModalProps> = ({
                 </div>
 
                 {/* Footer */}
-                <div className="grid grid-cols-2 mt-4">
+                <div className="grid grid-cols-2 mt-8">
                     <div>
                         <p className="font-bold">OBSERVACIONES:</p>
                         <p>Tp:01=Pagado 02=Cobro a destino 03=Credito</p>

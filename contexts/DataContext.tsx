@@ -1,5 +1,3 @@
-
-
 import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { 
     Invoice, Client, Vehicle, Expense, InventoryItem, Asset, AssetCategory, Supplier,
@@ -38,7 +36,7 @@ type DataContextType = {
     handleDeleteVehicle: (vehicleId: string) => Promise<void>;
     handleAssignToVehicle: (invoiceIds: string[], vehicleId: string) => Promise<void>;
     handleUnassignInvoice: (invoiceId: string) => Promise<void>;
-    handleDispatchVehicle: (vehicleId: string) => Promise<void>;
+    handleDispatchVehicle: (vehicleId: string) => Promise<Remesa | null>;
     onUndoDispatch: (vehicleId: string) => Promise<void>;
     handleFinalizeTrip: (vehicleId: string) => Promise<void>;
     handleSaveExpense: (expense: Expense) => Promise<void>;
@@ -218,7 +216,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const handleAssignToVehicle = async (invoiceIds: string[], vehicleId: string) => {
         try {
             const { updatedInvoices } = await apiFetch(`/vehicles/${vehicleId}/assign-invoices`, { method: 'POST', body: JSON.stringify({ invoiceIds }) });
-            setInvoices(prev => prev.map(inv => updatedInvoices.find((u: Invoice) => u.id === inv.id) || inv));
+            const updatedInvoicesMap = new Map((updatedInvoices as Invoice[]).map(inv => [inv.id, inv]));
+            setInvoices(prev => prev.map(inv => updatedInvoicesMap.get(inv.id) || inv));
             addToast({ type: 'info', title: 'Envíos Asignados', message: `${invoiceIds.length} factura(s) asignadas.` });
         } catch (error: any) { addToast({ type: 'error', title: 'Error al Asignar', message: error.message }); }
     };
@@ -233,16 +232,21 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } catch (error: any) { addToast({ type: 'error', title: 'Error al Desasignar', message: error.message }); }
     };
 
-    const handleDispatchVehicle = async (vehicleId: string) => {
-        if (!currentUser) return;
+    const handleDispatchVehicle = async (vehicleId: string): Promise<Remesa | null> => {
+        if (!currentUser) return null;
         try {
             const { updatedInvoices, updatedVehicle, newRemesa } = await apiFetch(`/vehicles/${vehicleId}/dispatch`, { method: 'POST' });
             setVehicles(prev => prev.map(v => v.id === updatedVehicle.id ? updatedVehicle : v));
-            setInvoices(prev => prev.map(inv => updatedInvoices.find((u: Invoice) => u.id === inv.id) || inv));
+            const updatedInvoicesMap = new Map((updatedInvoices as Invoice[]).map(inv => [inv.id, inv]));
+            setInvoices(prev => prev.map(inv => updatedInvoicesMap.get(inv.id) || inv));
             setRemesas(prev => [newRemesa, ...prev]);
             logAction(currentUser, 'DESPACHAR_VEHICULO', `Despachó el vehículo ${updatedVehicle.placa}.`, vehicleId);
             addToast({ type: 'success', title: 'Vehículo Despachado', message: `Remesa ${newRemesa.remesaNumber} generada.` });
-        } catch (error: any) { addToast({ type: 'error', title: 'Error al Despachar', message: error.message }); }
+            return newRemesa;
+        } catch (error: any) { 
+            addToast({ type: 'error', title: 'Error al Despachar', message: error.message });
+            return null;
+        }
     };
 
     const onUndoDispatch = async (vehicleId: string) => { /* TODO: Implement API call */ };
@@ -250,14 +254,40 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const { updatedVehicle, updatedInvoices } = await apiFetch(`/vehicles/${vehicleId}/finalize-trip`, { method: 'POST' });
             setVehicles(prev => prev.map(v => v.id === updatedVehicle.id ? updatedVehicle : v));
-            // FIX: Replaced inefficient Map logic with a more type-safe and consistent .find() approach.
-            setInvoices(prev => prev.map(inv => (updatedInvoices as Invoice[]).find(updated => updated.id === inv.id) || inv));
+            const updatedInvoicesMap = new Map((updatedInvoices as Invoice[]).map(inv => [inv.id, inv]));
+            setInvoices(prev => prev.map(inv => updatedInvoicesMap.get(inv.id) || inv));
             addToast({ type: 'success', title: 'Viaje Finalizado', message: `El vehículo ${updatedVehicle.placa} está disponible.` });
         } catch(error: any) {
             addToast({ type: 'error', title: 'Error al Finalizar Viaje', message: error.message });
         }
     };
-    const handleDeleteRemesa = async (id: string) => { await handleGenericDelete(id, '/remesas', setRemesas, 'Remesa'); };
+    
+    const handleDeleteRemesa = async (remesaId: string) => {
+        if (!currentUser) return;
+        if (!window.confirm("¿Está seguro de que desea eliminar esta remesa? Las facturas asociadas volverán al estado 'Pendiente para Despacho'. Esta acción no se puede deshacer.")) {
+            return;
+        }
+        try {
+            const { updatedInvoices, updatedVehicle } = await apiFetch(`/remesas/${remesaId}`, { method: 'DELETE' });
+
+            setRemesas(prev => prev.filter(r => r.id !== remesaId));
+            
+            if (updatedVehicle) {
+                setVehicles(prev => prev.map(v => v.id === updatedVehicle.id ? updatedVehicle : v));
+            }
+            if (updatedInvoices && updatedInvoices.length > 0) {
+                const updatedInvoicesMap = new Map((updatedInvoices as Invoice[]).map(inv => [inv.id, inv]));
+                setInvoices(prev => prev.map(inv => updatedInvoicesMap.get(inv.id) || inv));
+            }
+            
+            logAction(currentUser, 'ELIMINAR_REMESA', `Eliminó la remesa ${remesaId}.`, remesaId);
+            addToast({ type: 'success', title: 'Remesa Eliminada', message: 'La remesa ha sido eliminada y las facturas revertidas.' });
+
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Error al Eliminar Remesa', message: error.message });
+        }
+    };
+
 
     const value: DataContextType = {
         invoices, clients, suppliers, vehicles, expenses, inventory, assets, assetCategories, 
