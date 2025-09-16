@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { ShippingGuide, Client, Merchandise, Financials, Category, Invoice, Office, ShippingType, PaymentMethod, CompanyInfo, User } from '../../types';
 import Card, { CardHeader, CardTitle } from '../ui/Card';
@@ -15,7 +16,7 @@ const initialMerchandise: Merchandise = { quantity: 1, weight: 0, length: 0, wid
 const initialFinancials: Financials = { freight: 0, insuranceCost: 0, handling: 0, discount: 0, subtotal: 0, ipostel: 0, iva: 0, igtf: 0, total: 0 };
 
 interface InvoiceFormProps {
-    onSave: (invoice: Omit<Invoice, 'status' | 'paymentStatus' | 'shippingStatus'>) => void;
+    onSave: (invoice: Invoice | Omit<Invoice, 'status' | 'paymentStatus' | 'shippingStatus'>) => void;
     invoice?: Invoice | null;
     companyInfo: CompanyInfo;
     categories: Category[];
@@ -34,10 +35,13 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSave, invoice = null, compa
         if (invoice) return invoice.guide;
 
         const userOfficeId = isOperator && currentUser.officeId ? currentUser.officeId : offices[0]?.id || '';
+        
+        const today = new Date();
+        const localDateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
         return {
             guideNumber: `G-${Date.now()}`,
-            date: new Date().toISOString().split('T')[0],
+            date: localDateString,
             originOfficeId: userOfficeId,
             destinationOfficeId: offices.find(o => o.id !== userOfficeId)?.id || offices[1]?.id || '',
             sender: initialClientState,
@@ -148,17 +152,31 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSave, invoice = null, compa
     };
     
     const handleSave = () => {
-        const baseInvoice = {
-            id: invoice ? invoice.id : `INV-${Date.now()}`,
-            invoiceNumber: invoice ? invoice.invoiceNumber : `F-${String(Date.now()).slice(-6)}`,
-            controlNumber: invoice ? invoice.controlNumber : `C-${String(Date.now()).slice(-8)}`,
-            date: new Date().toISOString().split('T')[0],
-            clientName: guide.sender.name || 'N/A',
-            clientIdNumber: guide.sender.idNumber || 'N/A',
-            totalAmount: financials.total,
-            guide: guide,
-        };
-        onSave(baseInvoice);
+        if (invoice) { // EDIT MODE
+            const updatedInvoice: Invoice = {
+                // Preserve all original data first
+                ...invoice,
+                // Overwrite with data from the form state
+                date: guide.date,
+                clientName: guide.sender.name || 'N/A',
+                clientIdNumber: guide.sender.idNumber || 'N/A',
+                totalAmount: financials.total,
+                guide: guide,
+            };
+            onSave(updatedInvoice);
+        } else { // CREATE MODE
+            const newInvoice: Omit<Invoice, 'status' | 'paymentStatus' | 'shippingStatus'> = {
+                id: `INV-${Date.now()}`,
+                invoiceNumber: `F-${String(Date.now()).slice(-6)}`,
+                controlNumber: `C-${String(Date.now()).slice(-8)}`,
+                date: guide.date,
+                clientName: guide.sender.name || 'N/A',
+                clientIdNumber: guide.sender.idNumber || 'N/A',
+                totalAmount: financials.total,
+                guide: guide,
+            };
+            onSave(newInvoice);
+        }
     };
     
     const resetForm = () => {
@@ -170,7 +188,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onSave, invoice = null, compa
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">N° Guía: {guide.guideNumber}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Fecha: {new Date(guide.date).toLocaleDateString('es-VE')}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Fecha: {new Date(guide.date + 'T00:00:00').toLocaleDateString('es-VE', {timeZone: 'UTC'})}</p>
                 </div>
                 <div className="flex flex-wrap space-x-2">
                     <Button variant="secondary" onClick={resetForm}><XCircleIcon className="w-4 h-4 mr-2" />Limpiar</Button>

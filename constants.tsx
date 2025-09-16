@@ -94,7 +94,7 @@ export const ALL_PERMISSION_KEYS: string[] = [
     // Remesas
     'remesas.view', 'remesas.create', 'remesas.delete',
     // Asociados
-    'asociados.view', 'asociados.create', 'asociados.edit', 'asociados.delete',
+    'asociados.view', 'asociados.create', 'asociados.edit', 'asociados.delete', 'asociados.pagos.delete',
     // Clientes
     'clientes.view', 'clientes.create', 'clientes.edit', 'clientes.delete',
     // Proveedores
@@ -149,6 +149,7 @@ export const PERMISSION_KEY_TRANSLATIONS: Record<string, string> = {
     'asociados.create': 'Crear Asociados',
     'asociados.edit': 'Editar Asociados',
     'asociados.delete': 'Eliminar Asociados',
+    'asociados.pagos.delete': 'Eliminar Deudas de Asociados',
     // Clientes
     'clientes.view': 'Ver Clientes',
     'clientes.create': 'Crear Clientes',

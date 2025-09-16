@@ -164,19 +164,23 @@ const CertificadoVehiculoTab: React.FC<CertificadoVehiculoTabProps> = (props) =>
                             </div>
                             <div className="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex-grow">
                                 <div className="flex justify-between items-center mb-2">
-                                    <h4 className="font-semibold text-sm">Certificados</h4>
+                                    <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200">Certificados</h4>
                                     <Button size="sm" variant="secondary" onClick={() => handleOpenCertModal(v.id, null)}>
                                         <PlusIcon className="w-3 h-3 mr-1" /> Añadir
                                     </Button>
                                 </div>
                                 {vehicleCerts.length > 0 ? (
-                                    <ul className="space-y-1 text-xs">
+                                    <ul className="space-y-2 text-xs">
                                         {vehicleCerts.map(cert => (
-                                            <li key={cert.id} className="flex justify-between items-center">
-                                                <span>{cert.descripcion}</span>
+                                            <li key={cert.id} className="p-2 rounded-md bg-white dark:bg-gray-900/50 flex justify-between items-center text-gray-600 dark:text-gray-300">
+                                                <div>
+                                                    <p className="font-semibold text-gray-800 dark:text-gray-200">{cert.descripcion}</p>
+                                                    <p>Inicio: {cert.fechaInicio}</p>
+                                                </div>
                                                 <span className={`px-2 py-0.5 rounded-full font-medium ${
                                                     cert.status === 'Activo' ? 'bg-green-100 text-green-800 dark:bg-green-800/50 dark:text-green-300' : 
-                                                    cert.status === 'Suspendido' ? 'bg-red-100 text-red-800 dark:bg-red-800/50 dark:text-red-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800/50 dark:text-yellow-300'}`
+                                                    cert.status === 'Suspendido' ? 'bg-red-100 text-red-800 dark:bg-red-800/50 dark:text-red-300' :
+                                                    cert.status === 'Excluido' ? 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800/50 dark:text-yellow-300'}`
                                                 }>{cert.status}</span>
                                             </li>
                                         ))}
@@ -224,7 +228,7 @@ const CertificadoVehiculoTab: React.FC<CertificadoVehiculoTabProps> = (props) =>
                         <Input label="Tipo" name="tipo" value={selectedVehicle.tipo || ''} onChange={handleVehicleFormChange} />
                         <Input label="Uso" name="uso" value={selectedVehicle.uso || ''} onChange={handleVehicleFormChange} />
                         <Input label="Servicio" name="servicio" value={selectedVehicle.servicio || ''} onChange={handleVehicleFormChange} />
-                        <Select label="Actividad Vehículo" name="actividadVehiculo" value={selectedVehicle.actividadVehiculo || 'Carga'} onChange={handleVehicleFormChange}>
+                        <Select label="Actividad Vehículo" name="actividadVehiculo" value={selectedVehicle.actividadVehiculo || 'Carga'} onChange={handleVehicleFormChange} required>
                             <option value="Carga">Carga</option>
                             <option value="Pasajero">Pasajero</option>
                         </Select>
@@ -250,22 +254,23 @@ const CertificadoVehiculoTab: React.FC<CertificadoVehiculoTabProps> = (props) =>
                             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                 <thead className="bg-gray-50 dark:bg-gray-700/50">
                                     <tr>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Descripción</th>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Fecha Inicio</th>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Estado</th>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300">Descripción</th>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300">Fecha Inicio</th>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300">Estado</th>
                                         <th className="relative px-4 py-2"><span className="sr-only">Actions</span></th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                     {vehicleCertificados.map(c => (
                                         <tr key={c.id}>
-                                            <td className="px-4 py-2">{c.descripcion}</td>
-                                            <td className="px-4 py-2">{c.fechaInicio}</td>
+                                            <td className="px-4 py-2 text-gray-900 dark:text-gray-100">{c.descripcion}</td>
+                                            <td className="px-4 py-2 text-gray-900 dark:text-gray-100">{c.fechaInicio}</td>
                                             <td className="px-4 py-2">
                                                 <Select label="" value={c.status} onChange={(e) => handleCertificateStatusChange(c, e.target.value as Certificado['status'])}>
                                                     <option value="Activo">Activo</option>
                                                     <option value="Inactivo">Inactivo</option>
                                                     <option value="Suspendido">Suspendido</option>
+                                                    <option value="Excluido">Excluido</option>
                                                 </Select>
                                             </td>
                                             <td className="px-4 py-2 text-right space-x-2">

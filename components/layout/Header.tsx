@@ -1,17 +1,20 @@
+
 import React from 'react';
 import { Page, CompanyInfo, User } from '../../types';
 import { NAV_ITEMS } from '../../constants';
-import { MenuIcon, UserIcon } from '../icons/Icons';
+import { MenuIcon, UserIcon, LogOutIcon } from '../icons/Icons';
 import CurrencyDisplay from '../ui/CurrencyDisplay';
+import ThemeToggle from './ThemeToggle';
 
 interface HeaderProps {
     currentPage: Page;
     onToggleSidebar: () => void;
     companyInfo: CompanyInfo;
     currentUser: User;
+    onLogout: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentPage, onToggleSidebar, companyInfo, currentUser }) => {
+const Header: React.FC<HeaderProps> = ({ currentPage, onToggleSidebar, companyInfo, currentUser, onLogout }) => {
     
     const getPageTitle = () => {
         if (currentPage === 'edit-invoice') return 'Editar Factura';
@@ -33,7 +36,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onToggleSidebar, companyIn
                 </button>
                 <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-white truncate">{pageTitle}</h1>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
                  <CurrencyDisplay bcvRate={companyInfo.bcvRate} />
                  <div className="hidden sm:flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg">
                     <UserIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
@@ -41,6 +44,15 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onToggleSidebar, companyIn
                         {currentUser.name}
                     </span>
                 </div>
+                 <ThemeToggle />
+                 <button
+                    onClick={onLogout}
+                    className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-red-100 dark:hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-white transition-colors"
+                    aria-label="Cerrar Sesión"
+                    title="Cerrar Sesión"
+                >
+                    <LogOutIcon className="w-5 h-5" />
+                </button>
             </div>
         </header>
     );

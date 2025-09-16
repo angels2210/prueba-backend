@@ -3,8 +3,10 @@ import { Asociado, Vehicle, Certificado, PagoAsociado, ReciboPagoAsociado, Permi
 import Card, { CardHeader, CardTitle } from '../ui/Card';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
-import { SearchIcon, PlusIcon, UserIcon, ArrowLeftIcon } from '../icons/Icons';
+import { SearchIcon, PlusIcon, UserIcon, ArrowLeftIcon, PlusCircleIcon } from '../icons/Icons';
 import AsociadoDetailView from './AsociadoDetailView';
+import GenerarDeudaMasivaModal from './GenerarDeudaMasivaModal';
+import { useToast } from '../ui/ToastProvider';
 
 interface AsociadosGestionViewProps {
     asociados: Asociado[];
@@ -26,9 +28,11 @@ interface AsociadosGestionViewProps {
 }
 
 const AsociadosGestionView: React.FC<AsociadosGestionViewProps> = (props) => {
-    const { asociados, permissions, onSaveAsociado } = props;
+    const { asociados, permissions, onSaveAsociado, onSavePago } = props;
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedAsociado, setSelectedAsociado] = useState<Asociado | null>(null);
+    const [isMassiveDebtModalOpen, setIsMassiveDebtModalOpen] = useState(false);
+    const { addToast } = useToast();
 
     const filteredAsociados = useMemo(() => {
         if (!searchTerm) return asociados;
@@ -63,12 +67,51 @@ const AsociadosGestionView: React.FC<AsociadosGestionViewProps> = (props) => {
         setSelectedAsociado(null);
     };
     
+    const handleGenerateMassiveDebt = (debtData: {
+        concepto: string,
+        cuotas: string,
+        montoBs: number,
+        montoUsd: number,
+        fechaVencimiento: string,
+        applyTo: 'Activo' | 'Todos'
+    }) => {
+        const { applyTo, ...pagoData } = debtData;
+        
+        const associatesToApply = applyTo === 'Activo'
+            ? asociados.filter(a => a.status === 'Activo')
+            : asociados;
+
+        if (associatesToApply.length === 0) {
+            addToast({ type: 'warning', title: 'Sin Destinatarios', message: 'No se encontraron asociados que cumplan con el criterio.' });
+            return;
+        }
+
+        associatesToApply.forEach(asociado => {
+            const newPago: Omit<PagoAsociado, 'id' | 'reciboId'> = {
+                ...pagoData,
+                asociadoId: asociado.id,
+                status: 'Pendiente',
+            };
+            onSavePago(newPago as PagoAsociado);
+        });
+
+        addToast({ type: 'success', title: 'Operación Exitosa', message: `Se han generado ${associatesToApply.length} deudas.` });
+        setIsMassiveDebtModalOpen(false);
+    };
+
+    
     if (selectedAsociado) {
         return <AsociadoDetailView 
             asociado={selectedAsociado} 
             onBack={handleBackToList}
             onSaveAsociado={onSaveAsociado}
-            {...props}
+            vehicles={props.vehicles}
+            onSaveVehicle={props.onSaveVehicle}
+            onDeleteVehicle={props.onDeleteVehicle}
+            certificados={props.certificados}
+            onSaveCertificado={props.onSaveCertificado}
+            onDeleteCertificado={props.onDeleteCertificado}
+            permissions={props.permissions}
         />
     }
 
@@ -82,11 +125,18 @@ const AsociadosGestionView: React.FC<AsociadosGestionViewProps> = (props) => {
                 <CardHeader>
                     <div className="flex flex-wrap justify-between items-center gap-4">
                         <CardTitle>Búsqueda de Asociados</CardTitle>
-                        {permissions['asociados.create'] && (
-                             <Button onClick={handleCreateNew}>
-                                <PlusIcon className="w-4 h-4 mr-2" /> Nuevo Asociado
-                            </Button>
-                        )}
+                         <div className="flex items-center gap-2">
+                            {permissions['asociados.create'] && (
+                                <Button onClick={() => setIsMassiveDebtModalOpen(true)} variant="secondary">
+                                    <PlusCircleIcon className="w-4 h-4 mr-2" /> Generar Deuda Masiva
+                                </Button>
+                            )}
+                            {permissions['asociados.create'] && (
+                                 <Button onClick={handleCreateNew}>
+                                    <PlusIcon className="w-4 h-4 mr-2" /> Nuevo Asociado
+                                </Button>
+                            )}
+                        </div>
                     </div>
                     <div className="mt-4 max-w-lg">
                         <Input 
@@ -127,6 +177,12 @@ const AsociadosGestionView: React.FC<AsociadosGestionViewProps> = (props) => {
                     )}
                 </div>
             </Card>
+            <GenerarDeudaMasivaModal
+                isOpen={isMassiveDebtModalOpen}
+                onClose={() => setIsMassiveDebtModalOpen(false)}
+                onGenerate={handleGenerateMassiveDebt}
+                companyInfo={props.companyInfo}
+            />
         </div>
     );
 };

@@ -59,6 +59,39 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
+
+        @media print {
+            body {
+                background-color: white !important;
+            }
+            body > * {
+                display: none;
+            }
+            .printable-area {
+                display: block !important;
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: auto;
+                margin: 0;
+                padding: 1rem;
+                box-sizing: border-box;
+            }
+            .printable-area * {
+                color: black !important;
+                border-color: #e5e7eb !important;
+            }
+             .printable-area .bg-gray-50 { background-color: #f9fafb !important; }
+            .printable-area .bg-gray-100 { background-color: #f3f4f6 !important; }
+            .printable-area .bg-primary-500 { background-color: #3b82f6 !important; }
+            .printable-area .text-white { color: white !important; }
+
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
     </style>
 <script type="importmap">
 {

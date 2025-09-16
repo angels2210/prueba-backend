@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
@@ -31,7 +32,9 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, companyInfo }) => {
       }
   };
 
+
   const backgroundStyle = companyInfo.loginImageUrl ? { backgroundImage: `url(${companyInfo.loginImageUrl})` } : {};
+
 
   return (
     <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900">

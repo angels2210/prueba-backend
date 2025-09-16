@@ -1,43 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { PagoAsociado, CompanyInfo } from '../../types';
+import { CompanyInfo } from '../../types';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
+import Select from '../ui/Select';
 
-interface PagoAsociadoFormModalProps {
+interface GenerarDeudaMasivaModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (pago: PagoAsociado) => void;
-    pago: PagoAsociado | null;
-    asociadoId: string;
+    onGenerate: (data: {
+        concepto: string,
+        cuotas: string,
+        montoBs: number,
+        montoUsd: number,
+        fechaVencimiento: string,
+        applyTo: 'Activo' | 'Todos'
+    }) => void;
     companyInfo: CompanyInfo;
 }
 
-const PagoAsociadoFormModal: React.FC<PagoAsociadoFormModalProps> = ({ isOpen, onClose, onSave, pago, asociadoId, companyInfo }) => {
-    const [formData, setFormData] = useState<Partial<PagoAsociado>>({});
+const GenerarDeudaMasivaModal: React.FC<GenerarDeudaMasivaModalProps> = ({ isOpen, onClose, onGenerate, companyInfo }) => {
+    const [concepto, setConcepto] = useState('');
+    const [cuotas, setCuotas] = useState('');
+    const [fechaVencimiento, setFechaVencimiento] = useState(new Date().toISOString().split('T')[0]);
     const [montoBs, setMontoBs] = useState<number | ''>('');
     const [montoUsd, setMontoUsd] = useState<number | ''>('');
+    const [applyTo, setApplyTo] = useState<'Activo' | 'Todos'>('Activo');
     const [lastEdited, setLastEdited] = useState<'bs' | 'usd'>('bs');
 
     const bcvRate = companyInfo.bcvRate || 1;
-
-    useEffect(() => {
-        if (isOpen) {
-            const initialData = pago || {
-                asociadoId,
-                concepto: '',
-                cuotas: '',
-                montoBs: 0,
-                montoUsd: 0,
-                fechaVencimiento: new Date().toISOString().split('T')[0],
-                status: 'Pendiente'
-            };
-            setFormData(initialData);
-            setMontoBs(initialData.montoBs || '');
-            setMontoUsd(initialData.montoUsd || (initialData.montoBs / bcvRate) || '');
-            setLastEdited('bs');
-        }
-    }, [pago, isOpen, asociadoId, bcvRate]);
 
     useEffect(() => {
         if (lastEdited === 'bs' && typeof montoBs === 'number' && bcvRate > 0) {
@@ -51,12 +42,6 @@ const PagoAsociadoFormModal: React.FC<PagoAsociadoFormModalProps> = ({ isOpen, o
         }
     }, [montoUsd, bcvRate, lastEdited]);
 
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
     const handleMontoBsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setLastEdited('bs');
         setMontoBs(e.target.value === '' ? '' : parseFloat(e.target.value));
@@ -66,24 +51,28 @@ const PagoAsociadoFormModal: React.FC<PagoAsociadoFormModalProps> = ({ isOpen, o
         setLastEdited('usd');
         setMontoUsd(e.target.value === '' ? '' : parseFloat(e.target.value));
     };
-
-
+    
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const finalData = {
-            ...formData,
-            montoBs: typeof montoBs === 'number' ? montoBs : 0,
-            montoUsd: typeof montoUsd === 'number' ? montoUsd : 0,
-        };
-        onSave(finalData as PagoAsociado);
+        if (concepto && typeof montoBs === 'number' && montoBs > 0) {
+            onGenerate({
+                concepto,
+                cuotas,
+                montoBs,
+                montoUsd: typeof montoUsd === 'number' ? montoUsd : 0,
+                fechaVencimiento,
+                applyTo,
+            });
+        }
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={pago ? 'Editar Deuda/Concepto' : 'Nueva Deuda/Concepto'}>
+        <Modal isOpen={isOpen} onClose={onClose} title="Generar Deuda Masiva para Asociados">
             <form onSubmit={handleSubmit} className="space-y-4">
-                <Input name="concepto" label="Descripción del Concepto" value={formData.concepto || ''} onChange={handleChange} required />
+                <Input label="Concepto de la Deuda" value={concepto} onChange={e => setConcepto(e.target.value)} required placeholder="Ej: Cuota de Mantenimiento Enero 2025" />
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <div>
+                    <div>
                         <Input 
                             label="Importe (Bs.)" 
                             type="number" 
@@ -104,18 +93,24 @@ const PagoAsociadoFormModal: React.FC<PagoAsociadoFormModalProps> = ({ isOpen, o
                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">Tasa BCV: {bcvRate}</p>
                     </div>
                 </div>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input name="cuotas" label="Cuotas" placeholder="Ej: 41-45 o 10" value={formData.cuotas || ''} onChange={handleChange} />
-                    <Input name="fechaVencimiento" label="Fecha de Vencimiento" type="date" value={formData.fechaVencimiento || ''} onChange={handleChange} />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input label="Cuotas" placeholder="Ej: 1/12" value={cuotas} onChange={e => setCuotas(e.target.value)} />
+                    <Input label="Fecha de Vencimiento" type="date" value={fechaVencimiento} onChange={e => setFechaVencimiento(e.target.value)} required />
                 </div>
+
+                <Select label="Aplicar a" value={applyTo} onChange={e => setApplyTo(e.target.value as 'Activo' | 'Todos')}>
+                    <option value="Activo">Solo a Socios Activos</option>
+                    <option value="Todos">A Todos los Socios</option>
+                </Select>
                 
-                <div className="flex justify-end space-x-2 pt-4">
+                <div className="flex justify-end space-x-2 pt-4 border-t dark:border-gray-700 mt-6">
                     <Button variant="secondary" type="button" onClick={onClose}>Cancelar</Button>
-                    <Button type="submit">Guardar</Button>
+                    <Button type="submit">Generar Deudas</Button>
                 </div>
             </form>
         </Modal>
     );
 };
 
-export default PagoAsociadoFormModal;
+export default GenerarDeudaMasivaModal;

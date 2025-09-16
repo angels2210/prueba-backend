@@ -1,4 +1,4 @@
-export type Page = 'dashboard' | 'shipping-guide' | 'invoices' | 'asociados' | 'reports' | 'configuracion' | 'categories' | 'edit-invoice' | 'report-detail' | 'clientes' | 'proveedores' | 'offices' | 'shipping-types' | 'payment-methods' | 'libro-contable' | 'inventario' | 'auditoria' | 'inventario-envios' | 'inventario-bienes' | 'bienes-categorias' | 'asociados-gestion' | 'asociados-estadisticas' | 'asociados-reportes' | 'remesas' | 'flota' | 'flota-vehiculos';
+export type Page = 'dashboard' | 'shipping-guide' | 'invoices' | 'asociados' | 'reports' | 'configuracion' | 'categories' | 'edit-invoice' | 'report-detail' | 'clientes' | 'proveedores' | 'offices' | 'shipping-types' | 'payment-methods' | 'libro-contable' | 'inventario' | 'auditoria' | 'inventario-envios' | 'inventario-bienes' | 'bienes-categorias' | 'asociados-gestion' | 'asociados-estadisticas' | 'asociados-reportes' | 'asociados-pagos' | 'remesas' | 'flota' | 'flota-vehiculos';
 
 export type Permissions = Record<string, boolean>;
 
@@ -213,7 +213,7 @@ export interface Certificado {
     fechaInicio: string;
     fechaSuspension?: string;
     rutaVehiculo?: string;
-    status: 'Activo' | 'Inactivo' | 'Suspendido';
+    status: 'Activo' | 'Inactivo' | 'Suspendido' | 'Excluido';
 }
 
 export interface PagoAsociado {
@@ -222,6 +222,7 @@ export interface PagoAsociado {
     concepto: string;
     cuotas: string; 
     montoBs: number;
+    montoUsd?: number;
     fechaVencimiento: string;
     status: 'Pendiente' | 'Pagado';
     reciboId?: string;

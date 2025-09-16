@@ -1,3 +1,6 @@
+
+
+
 import React from 'react';
 import { CompanyInfo, User, Role, Permissions, Office } from '../../types';
 import Card, { CardHeader, CardTitle } from '../ui/Card';
@@ -9,6 +12,7 @@ import { useToast } from '../ui/ToastProvider';
 import { CONFIG_SUB_NAV_ITEMS } from '../../constants';
 import AccountingTile from '../libro-contable/AccountingTile';
 import RoleManagement from '../system/RoleManagement';
+import { GoogleGenAI } from '@google/genai';
 
 
 interface ConfiguracionViewProps {
@@ -56,25 +60,34 @@ const CompanyInfoSettings: React.FC<{ info: CompanyInfo; onSave: (info: CompanyI
 
     const handleFetchBcvRate = async () => {
         setIsFetchingRate(true);
-        addToast({ type: 'info', title: 'Consultando Tasa', message: 'Obteniendo tasa de cambio desde el servidor...' });
+        addToast({ type: 'info', title: 'Consultando BCV', message: 'Obteniendo tasa de cambio actualizada...' });
         try {
-            const response = await fetch('http://localhost:5000/api/bcv-rate');
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'No se pudo obtener la tasa del servidor.' }));
-                throw new Error(errorData.message);
-            }
-            const data = await response.json();
-            const rate = parseFloat(data.rate);
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: "Dame únicamente el valor numérico de la tasa de cambio oficial del BCV en Venezuela para hoy (USD a VES). Formato: 12.34",
+                 config: {
+                    temperature: 0,
+                }
+            });
+            const text = response.text;
             
-            if (!isNaN(rate)) {
-                setFormData(prev => ({ ...prev, bcvRate: rate }));
-                addToast({ type: 'success', title: 'Tasa Actualizada', message: `Tasa BCV obtenida: ${rate}` });
+            const match = text.match(/[\d,.]+/);
+            if (match) {
+                const rateString = match[0].replace(',', '.');
+                const rate = parseFloat(rateString);
+                if (!isNaN(rate)) {
+                    setFormData(prev => ({ ...prev, bcvRate: rate }));
+                    addToast({ type: 'success', title: 'Tasa Actualizada', message: `Tasa BCV obtenida: ${rate}` });
+                } else {
+                    throw new Error('No se pudo procesar el número de la respuesta.');
+                }
             } else {
-                throw new Error('La respuesta del servidor no es un número válido.');
+                throw new Error('No se encontró un valor numérico en la respuesta.');
             }
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error al obtener la tasa del BCV:", error);
-            addToast({ type: 'error', title: 'Error', message: error.message || 'No se pudo obtener la tasa automáticamente.' });
+            addToast({ type: 'error', title: 'Error', message: 'No se pudo obtener la tasa del BCV automáticamente.' });
         } finally {
             setIsFetchingRate(false);
         }

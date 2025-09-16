@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { Asociado, Vehicle, Certificado, PagoAsociado, ReciboPagoAsociado, Permissions, CompanyInfo } from '../../types';
+import { Asociado, Vehicle, Certificado, Permissions } from '../../types';
 import Button from '../ui/Button';
 import { ArrowLeftIcon } from '../icons/Icons';
 import DatosSocioTab from './DatosSocioTab';
 import CertificadoVehiculoTab from './CertificadoVehiculoTab';
-import PagosAsociadoTab from './PagosAsociadoTab';
 
 interface AsociadoDetailViewProps {
     asociado: Asociado;
@@ -19,18 +18,10 @@ interface AsociadoDetailViewProps {
     onSaveCertificado: (certificado: Certificado) => void;
     onDeleteCertificado: (certificadoId: string) => void;
 
-    pagos: PagoAsociado[];
-    onSavePago: (pago: PagoAsociado) => void;
-    onDeletePago: (pagoId: string) => void;
-    
-    recibos: ReciboPagoAsociado[];
-    onSaveRecibo: (recibo: ReciboPagoAsociado) => void;
-
     permissions: Permissions;
-    companyInfo: CompanyInfo;
 }
 
-type Tab = 'datos' | 'vehiculos' | 'pagos';
+type Tab = 'datos' | 'vehiculos';
 
 const AsociadoDetailView: React.FC<AsociadoDetailViewProps> = (props) => {
     const { asociado, onBack } = props;
@@ -78,7 +69,6 @@ const AsociadoDetailView: React.FC<AsociadoDetailViewProps> = (props) => {
                 <nav className="-mb-px flex space-x-2" aria-label="Tabs">
                     <TabButton tabId="datos" label="Datos del Socio" />
                     <TabButton tabId="vehiculos" label="Vehículos y Certificados" />
-                    <TabButton tabId="pagos" label="Pagos y Deudas" />
                 </nav>
             </div>
             
@@ -92,15 +82,6 @@ const AsociadoDetailView: React.FC<AsociadoDetailViewProps> = (props) => {
                     certificados={props.certificados}
                     onSaveCertificado={props.onSaveCertificado}
                     onDeleteCertificado={props.onDeleteCertificado}
-                />}
-                {activeTab === 'pagos' && <PagosAsociadoTab
-                     asociado={currentAsociado}
-                     pagos={props.pagos}
-                     onSavePago={props.onSavePago}
-                     onDeletePago={props.onDeletePago}
-                     recibos={props.recibos}
-                     onSaveRecibo={props.onSaveRecibo}
-                     companyInfo={props.companyInfo}
                 />}
             </div>
         </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Permissions } from '../../types';
 import AccountingTile from '../libro-contable/AccountingTile';
-import { UsersIcon, BarChartIcon, FileTextIcon } from '../icons/Icons';
+import { UsersIcon, BarChartIcon, FileTextIcon, CreditCardIcon } from '../icons/Icons';
 
 interface AsociadosLandingViewProps {
     permissions: Permissions;
@@ -27,6 +27,15 @@ const AsociadosLandingView: React.FC<AsociadosLandingViewProps> = ({ permissions
                     />
                 )}
                 {permissions['asociados.view'] && (
+                    <AccountingTile
+                        title="Pagos de Asociados"
+                        description="Registrar abonos, generar recibos y gestionar deudas."
+                        icon={CreditCardIcon}
+                        onClick={() => window.location.hash = 'asociados/pagos'}
+                        colorVariant="orange"
+                    />
+                )}
+                {permissions['asociados.view'] && (
                      <AccountingTile
                         title="Estadísticas de Pagos"
                         description="Ver reporte de asociados solventes y con deudas."
@@ -36,15 +45,13 @@ const AsociadosLandingView: React.FC<AsociadosLandingViewProps> = ({ permissions
                     />
                 )}
                  {permissions['asociados.view'] && (
-                    <div className="md:col-span-2">
-                        <AccountingTile
-                            title="Reportes de Asociados"
-                            description="Generar estado de cuenta y otros reportes detallados."
-                            icon={FileTextIcon}
-                            onClick={() => window.location.hash = 'asociados/reportes'}
-                            colorVariant="purple"
-                        />
-                    </div>
+                    <AccountingTile
+                        title="Reportes de Asociados"
+                        description="Generar estado de cuenta y otros reportes detallados."
+                        icon={FileTextIcon}
+                        onClick={() => window.location.hash = 'asociados/reportes'}
+                        colorVariant="purple"
+                    />
                 )}
             </div>
         </div>

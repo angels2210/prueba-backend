@@ -38,7 +38,6 @@ const ITEMS_PER_PAGE = 15;
 const InvoicesView: React.FC<InvoicesViewProps> = ({ invoices, clients, categories, userPermissions, onUpdateStatuses, onDeleteInvoice, companyInfo, initialFilter }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
-    const [printRequested, setPrintRequested] = useState(false);
 
     // Filter state
     const [searchTerm, setSearchTerm] = useState('');
@@ -100,16 +99,14 @@ const InvoicesView: React.FC<InvoicesViewProps> = ({ invoices, clients, categori
         }, { totalAmount: 0 });
     }, [filteredInvoices]);
 
-    const openModal = (invoice: Invoice, print: boolean = false) => {
+    const openModal = (invoice: Invoice) => {
         setSelectedInvoice(invoice);
-        setPrintRequested(print);
         setIsModalOpen(true);
     };
 
     const closeModal = () => {
         setIsModalOpen(false);
         setSelectedInvoice(null);
-        setPrintRequested(false);
     };
 
     const handleEdit = (invoiceId: string) => {
@@ -241,8 +238,6 @@ const InvoicesView: React.FC<InvoicesViewProps> = ({ invoices, clients, categori
                     companyInfo={companyInfo} 
                     clients={clients} 
                     categories={categories}
-                    printOnOpen={printRequested}
-                    onPrintComplete={() => setPrintRequested(false)}
                 />
             )}
         </div>

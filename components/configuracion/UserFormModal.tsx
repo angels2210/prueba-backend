@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, Role, Office } from '../../types';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import Select from '../ui/Select';
+import { EyeIcon, EyeOffIcon } from '../icons/Icons';
 
 interface UserFormModalProps {
     isOpen: boolean;
@@ -18,6 +18,7 @@ interface UserFormModalProps {
 
 const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, user, roles, offices, currentUser }) => {
     const [formData, setFormData] = useState<Partial<User>>({});
+    const [showPassword, setShowPassword] = useState(false);
 
     const availableRoles = useMemo(() => {
         const techRole = roles.find(r => r.name === 'Soporte Técnico');
@@ -31,6 +32,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
     useEffect(() => {
         if (isOpen) {
             setFormData(user || { name: '', username: '', password: '', email: '', roleId: availableRoles[0]?.id, officeId: '' });
+            setShowPassword(false);
         }
     }, [user, isOpen, availableRoles]);
 
@@ -50,16 +52,34 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                 <Input name="name" label="Nombre Completo" value={formData.name || ''} onChange={handleChange} required />
                 <Input name="username" label="Usuario (para iniciar sesión)" value={formData.username || ''} onChange={handleChange} required autoComplete="username"/>
                 <Input name="email" label="Correo Electrónico (Opcional)" type="email" value={formData.email || ''} onChange={handleChange} />
-                <Input 
-                    name="password" 
-                    label="Contraseña" 
-                    type="password" 
-                    autoComplete="new-password"
-                    value={formData.password || ''} 
-                    onChange={handleChange} 
-                    required={!user} // Required only for new users
-                    placeholder={user ? 'Dejar en blanco para no cambiar' : ''}
-                />
+                
+                <div>
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Contraseña
+                    </label>
+                    <div className="relative">
+                        <input
+                            id="password"
+                            name="password"
+                            type={showPassword ? 'text' : 'password'}
+                            autoComplete="new-password"
+                            value={formData.password || ''}
+                            onChange={handleChange}
+                            required={!user}
+                            placeholder={user ? 'Dejar en blanco para no cambiar' : ''}
+                            className="block w-full rounded-md border border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 pr-10"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                            aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                        >
+                            {showPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                        </button>
+                    </div>
+                </div>
+
                 <Select name="roleId" label="Rol" value={formData.roleId || ''} onChange={handleChange} required>
                     {availableRoles.map(role => (
                         <option key={role.id} value={role.id}>{role.name}</option>

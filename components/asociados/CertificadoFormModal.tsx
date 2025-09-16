@@ -50,6 +50,7 @@ const CertificadoFormModal: React.FC<CertificadoFormModalProps> = ({ isOpen, onC
                     <option value="Activo">Activo</option>
                     <option value="Inactivo">Inactivo</option>
                     <option value="Suspendido">Suspendido</option>
+                    <option value="Excluido">Excluido</option>
                 </Select>
                 
                 <div className="flex justify-end space-x-2 pt-4">

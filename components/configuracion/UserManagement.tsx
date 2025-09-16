@@ -1,10 +1,12 @@
-
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { User, Role, Office, Permissions } from '../../types';
 import Card, { CardHeader, CardTitle } from '../ui/Card';
 import Button from '../ui/Button';
-import { PlusIcon, EditIcon, TrashIcon, UsersIcon } from '../icons/Icons';
+import { PlusIcon, EditIcon, TrashIcon, UsersIcon, SearchIcon } from '../icons/Icons';
 import UserFormModal from './UserFormModal';
+import usePagination from '../../hooks/usePagination';
+import PaginationControls from '../ui/PaginationControls';
+import Input from '../ui/Input';
 
 
 interface UserManagementProps {
@@ -17,9 +19,30 @@ interface UserManagementProps {
     userPermissions: Permissions;
 }
 
+const ITEMS_PER_PAGE = 5;
+
 const UserManagement: React.FC<UserManagementProps> = ({ users, roles, offices, onSaveUser, onDeleteUser, currentUser, userPermissions }) => {
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredUsers = useMemo(() => {
+        if (!searchTerm) return users;
+        const lowercasedTerm = searchTerm.toLowerCase();
+        return users.filter(user =>
+            user.name.toLowerCase().includes(lowercasedTerm) ||
+            user.username.toLowerCase().includes(lowercasedTerm)
+        );
+    }, [users, searchTerm]);
+
+    const {
+        paginatedData,
+        currentPage,
+        totalPages,
+        setCurrentPage,
+        totalItems,
+    } = usePagination(filteredUsers, ITEMS_PER_PAGE);
+
 
     const handleOpenUserModal = (user: User | null) => {
         setEditingUser(user);
@@ -63,10 +86,20 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, roles, offices, 
             {/* User List Card */}
             <Card>
                 <CardHeader>
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-wrap justify-between items-center gap-4">
                         <div className="flex items-center">
                             <UsersIcon className="w-6 h-6 mr-3 text-primary-500" />
                             <CardTitle>Lista de Usuarios</CardTitle>
+                        </div>
+                         <div className="w-full sm:w-auto max-w-xs">
+                             <Input 
+                                label=""
+                                id="search-users" 
+                                placeholder="Buscar por nombre o usuario..." 
+                                value={searchTerm} 
+                                onChange={e => setSearchTerm(e.target.value)} 
+                                icon={<SearchIcon className="w-4 h-4 text-gray-400"/>} 
+                            />
                         </div>
                          <Button onClick={() => handleOpenUserModal(null)}>
                                 <PlusIcon className="w-4 h-4 mr-2" /> Nuevo Usuario
@@ -85,7 +118,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, roles, offices, 
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            {users.map(user => {
+                            {paginatedData.map(user => {
                                 const isEditable = canEditUser(user);
                                 const isDeletable = canDeleteUser(user);
                                 return (
@@ -102,7 +135,17 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, roles, offices, 
                             )})}
                         </tbody>
                     </table>
+                    {paginatedData.length === 0 && (
+                        <p className="text-center py-10 text-gray-500 dark:text-gray-400">No se encontraron usuarios.</p>
+                    )}
                 </div>
+                 <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    totalItems={totalItems}
+                    itemsPerPage={ITEMS_PER_PAGE}
+                />
             </Card>
 
             <UserFormModal

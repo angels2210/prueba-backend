@@ -21,8 +21,7 @@ export const calculateFinancialDetails = (guide: ShippingGuide, companyInfo: Com
         return acc + Math.max(realWeight, volumetricWeight) * (Number(item.quantity) || 1);
     }, 0);
 
-    const costPerKg = companyInfo?.costPerKg || 0;
-    const freight = totalWeight * costPerKg;
+    const freight = totalWeight * (companyInfo.costPerKg || 0);
 
     // Calculate discount from freight value
     const discountAmount = guide.hasDiscount

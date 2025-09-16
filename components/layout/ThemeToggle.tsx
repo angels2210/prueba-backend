@@ -24,18 +24,14 @@ const ThemeToggle: React.FC = () => {
     return (
         <button
             onClick={() => setIsDarkMode(!isDarkMode)}
-            className="w-full flex items-center justify-center p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-white"
+            className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-white transition-colors"
+            aria-label={isDarkMode ? "Activar modo claro" : "Activar modo oscuro"}
+            title={isDarkMode ? "Activar modo claro" : "Activar modo oscuro"}
         >
             {isDarkMode ? (
-                <>
-                    <SunIcon className="w-5 h-5" />
-                    <span className="ml-2 text-sm">Modo Claro</span>
-                </>
+                <SunIcon className="w-5 h-5" />
             ) : (
-                <>
-                    <MoonIcon className="w-5 h-5" />
-                    <span className="ml-2 text-sm">Modo Oscuro</span>
-                </>
+                <MoonIcon className="w-5 h-5" />
             )}
         </button>
     );

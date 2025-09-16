@@ -1,109 +1,51 @@
-import React, { createContext, useContext, ReactNode, useState, useEffect, useCallback } from 'react';
-import { User } from '../types';
-import { useToast } from '../components/ui/ToastProvider';
-import { useSystem } from './SystemContext';
 
-const API_URL = 'http://localhost:5000/api';
+import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import { User } from '../types';
+import apiFetch from '../utils/api';
 
 interface AuthContextType {
     isAuthenticated: boolean;
     currentUser: User | null;
-    token: string | null;
-    handleLogin: (username: string, password: string, rememberMe: boolean) => Promise<void>;
-    handleLogout: () => void;
-    loading: boolean;
+    isAuthLoading: boolean;
+    setIsAuthenticated: React.Dispatch<React.SetStateAction<boolean>>;
+    setCurrentUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [currentUser, setCurrentUser] = useState<User | null>(null);
-    const [token, setToken] = useState<string | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-    const [loading, setLoading] = useState<boolean>(true);
-    const { addToast } = useToast();
-    const { logAction } = useSystem();
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [isAuthLoading, setIsAuthLoading] = useState(true);
 
-    const handleLogout = useCallback(() => {
-        if (currentUser) {
-            logAction(currentUser, 'CIERRE_SESION', `El usuario '${currentUser.name}' cerró sesión.`);
-        }
-        localStorage.removeItem('authToken');
-        setToken(null);
-        setCurrentUser(null);
-        setIsAuthenticated(false);
-        window.location.hash = '';
-        addToast({ type: 'info', title: 'Sesión Cerrada', message: 'Ha cerrado sesión exitosamente.' });
-    }, [currentUser, logAction, addToast]);
-
-    // This effect runs only once on mount to check for an existing token
     useEffect(() => {
-        const validateTokenOnLoad = async () => {
-            const existingToken = localStorage.getItem('authToken');
-            if (existingToken) {
+        const validateSession = async () => {
+            const token = localStorage.getItem('authToken');
+            if (token) {
                 try {
-                    const response = await fetch(`${API_URL}/auth/me`, {
-                        headers: { 'Authorization': `Bearer ${existingToken}` }
-                    });
-
-                    if (response.ok) {
-                        const user = await response.json();
-                        setCurrentUser(user);
-                        setToken(existingToken);
+                    // This endpoint should validate the token and return the user object
+                    const userProfile = await apiFetch('/auth/profile');
+                    if (userProfile) {
+                        setCurrentUser(userProfile);
                         setIsAuthenticated(true);
                     } else {
-                        localStorage.removeItem('authToken');
+                        throw new Error("Invalid profile data");
                     }
                 } catch (error) {
-                    console.error("Token validation failed on load:", error);
+                    console.error("Session validation failed:", error);
                     localStorage.removeItem('authToken');
+                    setIsAuthenticated(false);
+                    setCurrentUser(null);
                 }
             }
-            setLoading(false);
+            setIsAuthLoading(false);
         };
-        validateTokenOnLoad();
-    }, []); // Empty dependency array ensures this runs only once on mount.
 
-    const handleLogin = async (username: string, password: string, rememberMe: boolean) => {
-        setLoading(true);
-        try {
-            const response = await fetch(`${API_URL}/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Usuario o contraseña incorrectos');
-            }
-
-            const { token: newToken, user } = await response.json();
-
-            localStorage.setItem('authToken', newToken);
-            if (rememberMe) {
-                localStorage.setItem('rememberedUser', user.username);
-            } else {
-                localStorage.removeItem('rememberedUser');
-            }
-            
-            setToken(newToken);
-            setCurrentUser(user);
-            setIsAuthenticated(true);
-            
-            logAction(user, 'INICIO_SESION', `El usuario '${user.name}' inició sesión.`);
-            addToast({ type: 'success', title: '¡Bienvenido!', message: `Ha iniciado sesión como ${user.name}.` });
-            window.location.hash = 'dashboard';
-
-        } catch (error: any) {
-            addToast({ type: 'error', title: 'Error de Autenticación', message: error.message });
-        } finally {
-            setLoading(false);
-        }
-    };
+        validateSession();
+    }, []);
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, currentUser, token, handleLogin, handleLogout, loading }}>
+        <AuthContext.Provider value={{ isAuthenticated, isAuthLoading, currentUser, setIsAuthenticated, setCurrentUser }}>
             {children}
         </AuthContext.Provider>
     );

@@ -3,19 +3,17 @@
 import React, { useEffect, useRef } from 'react';
 import { NAV_ITEMS } from '../../constants';
 import { Page, Permissions, CompanyInfo } from '../../types';
-import { PackageIcon, LogOutIcon } from '../icons/Icons';
-import ThemeToggle from './ThemeToggle';
+import { PackageIcon } from '../icons/Icons';
 
 interface SidebarProps {
     currentPage: Page;
-    onLogout: () => void;
     permissions: Permissions;
     isSidebarOpen: boolean;
     setIsSidebarOpen: (isOpen: boolean) => void;
     companyInfo: CompanyInfo;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentPage, onLogout, permissions, isSidebarOpen, setIsSidebarOpen, companyInfo }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentPage, permissions, isSidebarOpen, setIsSidebarOpen, companyInfo }) => {
     const sidebarRef = useRef<HTMLDivElement>(null);
 
     // Close sidebar on link click on mobile
@@ -91,16 +89,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onLogout, permissions, i
                         );
                     })}
                 </nav>
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-2 shrink-0">
-                     <ThemeToggle />
-                     <button
-                        onClick={onLogout}
-                        className="w-full flex items-center justify-center p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-red-100 dark:hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 focus:outline-none transition-colors"
-                    >
-                        <LogOutIcon className="w-5 h-5" />
-                        <span className="ml-2 text-sm">Cerrar Sesión</span>
-                    </button>
-                </div>
             </div>
         </>
     );

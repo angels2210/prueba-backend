@@ -1,6 +1,8 @@
+
 import React, { createContext, useContext, useEffect, useCallback, ReactNode, useState } from 'react';
-// import usePersistentState from '../hooks/usePersistentState';
 import { AuditLog, User, AppError } from '../types';
+import apiFetch from '../utils/api';
+import { useAuth } from './AuthContext';
 
 interface SystemContextType {
     auditLog: AuditLog[];
@@ -12,14 +14,29 @@ interface SystemContextType {
 const SystemContext = createContext<SystemContextType | undefined>(undefined);
 
 export const SystemProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    // FIX: The usePersistentState hook is obsolete. Replaced with React.useState.
+    const { isAuthenticated } = useAuth();
     const [auditLog, setAuditLog] = useState<AuditLog[]>([]);
     const [appErrors, setAppErrors] = useState<AppError[]>([]);
 
-    const logAction = useCallback((user: User, actionType: string, details: string, targetId?: string) => {
+    useEffect(() => {
+        const fetchLogs = async () => {
+            if (isAuthenticated) {
+                try {
+                    const logs = await apiFetch('/audit-logs');
+                    setAuditLog(logs);
+                } catch (error) {
+                    console.error("Failed to fetch audit logs", error);
+                }
+            } else {
+                setAuditLog([]); // Clear logs on logout
+            }
+        };
+        fetchLogs();
+    }, [isAuthenticated]);
+
+    const logAction = useCallback(async (user: User, actionType: string, details: string, targetId?: string) => {
         if (!user) return;
-        const newLogEntry: AuditLog = {
-            id: `log-${Date.now()}`,
+        const newLogEntry: Omit<AuditLog, 'id'> = {
             timestamp: new Date().toISOString(),
             userId: user.id,
             userName: user.name,
@@ -27,8 +44,18 @@ export const SystemProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             details: details,
             targetId: targetId
         };
-        setAuditLog(prev => [newLogEntry, ...prev]);
-    }, [setAuditLog]);
+        
+        try {
+            const savedLog = await apiFetch('/audit-logs', {
+                method: 'POST',
+                body: JSON.stringify(newLogEntry)
+            });
+            setAuditLog(prev => [savedLog, ...prev]);
+        } catch (error) {
+            console.error("Failed to save audit log to server:", error);
+            // Optionally add to local state with a temp ID as fallback
+        }
+    }, []);
 
     useEffect(() => {
         const handleError = (message: Event | string, source?: string, lineno?: number, colno?: number, error?: Error) => {
